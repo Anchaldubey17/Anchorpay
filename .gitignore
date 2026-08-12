@@ -1,0 +1,27 @@
+# Rust
+/contract/target/
+**/*.rs.bk
+Cargo.lock
+
+# Node / JS
+/frontend/node_modules/
+/frontend/dist/
+/frontend/dist-ssr/
+/frontend/*.local
+/frontend/.svelte-kit
+/frontend/.vercel
+/frontend/build/
+
+# IDEs & System
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+node_modules/
+.agents/
+.gemini/
