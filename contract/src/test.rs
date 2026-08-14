@@ -140,3 +140,48 @@ fn test_escrow_refund_flow() {
     let status = client.get_status();
     assert_eq!(status.state, EscrowState::Refunded);
 }
+
+#[test]
+fn test_errors() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    // Generate addresses
+    let depositor = Address::generate(&env);
+    let arbiter = Address::generate(&env);
+    let recipient1 = Address::generate(&env);
+    let token_issuer = Address::generate(&env);
+
+    // Register mock token
+    let token_id = env.register_stellar_asset_contract_v2(token_issuer);
+
+    // Register contract
+    let contract_id = env.register_contract(None, AnchorpayContract);
+    let client = AnchorpayContractClient::new(&env, &contract_id);
+
+    let mut recipients = Vec::new(&env);
+    recipients.push_back(recipient1.clone());
+
+    let mut shares = Vec::new(&env);
+    shares.push_back(1u32);
+
+    // 1. Initialize
+    client.initialize(&depositor, &recipients, &shares, &arbiter, &1000u64, &token_id);
+
+    // 2. Double initialization should fail
+    let res = client.try_initialize(&depositor, &recipients, &shares, &arbiter, &1000u64, &token_id);
+    assert!(res.is_err());
+
+    // 3. Deposit invalid amount (0) should fail
+    let res_dep = client.try_deposit(&0i128);
+    assert!(res_dep.is_err());
+
+    // 4. Release before deposit should fail
+    let res_rel = client.try_release();
+    assert!(res_rel.is_err());
+
+    // 5. Refund before deposit should fail
+    let res_ref = client.try_refund();
+    assert!(res_ref.is_err());
+}
+
