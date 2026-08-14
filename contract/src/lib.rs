@@ -140,3 +140,7 @@ impl AnchorpayContract {
         }
     }
 }
+
+#[cfg(test)]
+mod test;
+
