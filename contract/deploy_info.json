@@ -1,0 +1,7 @@
+{
+  "network": "testnet",
+  "contract_id": "CA352LBL2RVTLZG2ZOAQERZBN2DINWUIPRDRBVHF2CUDBOH3HNUZTYDN",
+  "wasm_hash": "f8d6a91e14f942ed215bfad0ce85510945f68747f5248798f3b43ee30534f628",
+  "deploy_tx": "d6ae2eb8e38b81788b975a0a5e0ad45cdd4cf6600bf7e7c0a66b5387ae5b47a2",
+  "init_tx": "44db6ba6f2b00e495d1a18cc2a0ebdb1ed31368ac15622860f872eba42a8f8de"
+}
