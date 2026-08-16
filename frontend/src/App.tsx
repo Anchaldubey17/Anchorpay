@@ -1,31 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { isConnected, getPublicKey } from '@stellar/freighter-api';
 
 function App() {
+  const [walletInstalled, setWalletInstalled] = useState<boolean | null>(null);
   const [walletConnected, setWalletConnected] = useState(false);
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock contract status
-  const contractState = {
-    state: 0, // Init
-    amountLocked: '0',
-    config: {
-      depositor: 'GDFFBVQB5NQ3Y5M63BVYGP3HULQJ7TIL3NNGZG6LNXPXTCTPDOOIPOK7',
-      recipients: ['GDFFBVQB5NQ3Y5M63BVYGP3HULQJ7TIL3NNGZG6LNXPXTCTPDOOIPOK7'],
-      shares: [1],
-      arbiter: 'GDFFBVQB5NQ3Y5M63BVYGP3HULQJ7TIL3NNGZG6LNXPXTCTPDOOIPOK7',
-      timelock: 1800000000,
-      token: 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+  // Check if Freighter is installed on load
+  useEffect(() => {
+    async function checkWallet() {
+      try {
+        const installed = await isConnected();
+        setWalletInstalled(!!installed);
+      } catch (err) {
+        console.error("Error checking Freighter installation:", err);
+        setWalletInstalled(false);
+      }
+    }
+    checkWallet();
+  }, []);
+
+  const handleConnectWallet = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const installed = await isConnected();
+      if (!installed) {
+        throw new Error("Freighter wallet extension is not installed.");
+      }
+
+      const publicKey = await getPublicKey();
+      if (!publicKey) {
+        throw new Error("No accounts found. Please unlock your Freighter wallet.");
+      }
+
+      setUserAddress(publicKey);
+      setWalletConnected(true);
+    } catch (err: any) {
+      console.error("Failed to connect Freighter:", err);
+      setError(err.message || "Failed to connect wallet.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleConnectWallet = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setWalletConnected(true);
-      setUserAddress('GDFFBVQB5NQ3Y5M63BVYGP3HULQJ7TIL3NNGZG6LNXPXTCTPDOOIPOK7');
-      setLoading(false);
-    }, 1000);
+  const handleDisconnect = () => {
+    setUserAddress(null);
+    setWalletConnected(false);
+    setError(null);
   };
 
   return (
@@ -48,13 +72,27 @@ function App() {
             Stellar Testnet
           </div>
 
-          <button
-            onClick={handleConnectWallet}
-            disabled={loading}
-            className="px-5 py-2 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50"
-          >
-            {loading ? 'Connecting...' : walletConnected ? `${userAddress?.slice(0, 6)}...${userAddress?.slice(-6)}` : 'Connect Wallet'}
-          </button>
+          {walletConnected ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-gray-400 bg-gray-900/60 px-3 py-2 rounded-xl border border-gray-800">
+                {userAddress?.slice(0, 6)}...{userAddress?.slice(-6)}
+              </span>
+              <button
+                onClick={handleDisconnect}
+                className="px-3 py-2 rounded-xl text-xs font-medium bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 transition-all"
+              >
+                Disconnect
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleConnectWallet}
+              disabled={loading || walletInstalled === false}
+              className="px-5 py-2 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50"
+            >
+              {loading ? 'Connecting...' : walletInstalled === false ? 'Freighter Not Found' : 'Connect Wallet'}
+            </button>
+          )}
         </div>
       </header>
 
@@ -63,13 +101,27 @@ function App() {
         {/* Left/Middle Column (Operations & Forms) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <div className="glass-panel p-6 rounded-2xl flex flex-col gap-4">
-            <h2 className="text-lg font-bold text-white mb-2">Escrow Management Dashboard</h2>
-            <p className="text-sm text-gray-400">
-              Welcome to the Anchorpay decentralized escrow system. Connect your Freighter wallet to interact with the locked contract.
-            </p>
-            <div className="mt-4 p-4 rounded-xl bg-violet-950/20 border border-violet-900/30 text-sm text-violet-200">
-              Scaffolded Interface. Connect Freighter Wallet to execute deposits, releases, and refunds.
-            </div>
+            <h2 className="text-lg font-bold text-white mb-2">Freighter Wallet Integration</h2>
+            
+            {error && (
+              <div className="p-4 rounded-xl bg-red-950/30 border border-red-900/40 text-sm text-red-300">
+                Error: {error}
+              </div>
+            )}
+
+            {walletInstalled === false ? (
+              <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-900/30 text-sm text-amber-300">
+                ⚠️ Freighter wallet extension is not detected in your browser. Please install the <a href="https://www.freighter.app/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-amber-200">Freighter Wallet Extension</a> and refresh the page.
+              </div>
+            ) : walletConnected ? (
+              <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-900/30 text-sm text-emerald-300">
+                ✅ Connected with account: <span className="font-mono font-bold select-all">{userAddress}</span>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-violet-950/20 border border-violet-900/30 text-sm text-violet-200">
+                Freighter wallet detected. Click "Connect Wallet" to fetch your account address and view contract operations.
+              </div>
+            )}
           </div>
         </div>
 
@@ -91,19 +143,13 @@ function App() {
               <div className="flex justify-between items-center text-sm py-1 border-b border-gray-900">
                 <span className="text-gray-400">Amount Locked</span>
                 <span className="font-mono text-white text-base font-bold">
-                  {contractState.amountLocked} XLM
+                  0 XLM
                 </span>
               </div>
               <div className="flex flex-col gap-1 text-sm py-1 border-b border-gray-900">
                 <span className="text-gray-400">Contract ID</span>
                 <span className="font-mono text-xs text-violet-300 break-all select-all">
                   CA352LBL2RVTLZG2ZOAQERZBN2DINWUIPRDRBVHF2CUDBOH3HNUZTYDN
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 text-sm py-1">
-                <span className="text-gray-400">Token Address</span>
-                <span className="font-mono text-xs text-gray-400 break-all">
-                  {contractState.config.token}
                 </span>
               </div>
             </div>
