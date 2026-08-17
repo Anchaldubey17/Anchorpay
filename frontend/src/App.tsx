@@ -276,8 +276,8 @@ function App() {
   return (
     <div className="min-h-screen bg-[#07080a] text-gray-100 flex flex-col font-sans">
       {/* Header */}
-      <header className="w-full glass-panel sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="w-full glass-panel sticky top-0 z-50 px-4 md:px-6 py-4 flex flex-col md:flex-row items-center gap-4 justify-between">
+        <div className="flex items-center gap-3 self-start md:self-auto">
           <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center font-bold text-xl shadow-lg shadow-violet-500/20">
             ⚓
           </div>
@@ -287,17 +287,17 @@ function App() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
           <button
             onClick={fetchContractStatus}
             disabled={loading}
-            className="p-2 rounded-xl text-gray-400 hover:text-white bg-gray-900 border border-gray-800 text-xs transition-all disabled:opacity-50"
+            className="p-2.5 rounded-xl text-gray-450 hover:text-white bg-gray-900 border border-gray-800 text-xs transition-all disabled:opacity-50"
           >
             {loading ? 'Refreshing...' : '🔄 Refresh State'}
           </button>
           
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-950/40 border border-violet-800/30 text-xs font-semibold text-violet-300">
-            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse"></span>
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-950/40 border border-violet-800/30 text-xs font-semibold text-violet-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
             Stellar Testnet
           </div>
 
@@ -317,7 +317,7 @@ function App() {
             <button
               onClick={handleConnectWallet}
               disabled={actionLoading || walletInstalled === false}
-              className="px-5 py-2 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-violet-600 hover:bg-violet-500 text-white transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50"
             >
               {actionLoading ? 'Connecting...' : walletInstalled === false ? 'Freighter Not Found' : 'Connect Wallet'}
             </button>
