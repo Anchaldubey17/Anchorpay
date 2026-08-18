@@ -2,7 +2,7 @@
 use super::*;
 use soroban_sdk::{
     testutils::{Address as _, Ledger},
-    token::{self, StellarAssetContractClient},
+    token::{self, StellarAssetClient},
     Address, Env, Vec,
 };
 
@@ -19,8 +19,9 @@ fn test_escrow_split_flow() {
     let token_issuer = Address::generate(&env);
 
     // 2. Register mock token contract (Stellar Asset Contract)
-    let token_id = env.register_stellar_asset_contract_v2(token_issuer.clone());
-    let token_admin = StellarAssetContractClient::new(&env, &token_id);
+    let sac = env.register_stellar_asset_contract_v2(token_issuer.clone());
+    let token_id = sac.address();
+    let token_admin = StellarAssetClient::new(&env, &token_id);
     let token_client = token::Client::new(&env, &token_id);
 
     // 3. Mint tokens to the depositor
@@ -28,7 +29,7 @@ fn test_escrow_split_flow() {
     assert_eq!(token_client.balance(&depositor), 1000i128);
 
     // 4. Register our Escrow Contract
-    let contract_id = env.register_contract(None, AnchorpayContract);
+    let contract_id = env.register(AnchorpayContract, ());
     let client = AnchorpayContractClient::new(&env, &contract_id);
 
     // 5. Initialize contract
@@ -95,14 +96,15 @@ fn test_escrow_refund_flow() {
     let token_issuer = Address::generate(&env);
 
     // 2. Register mock token
-    let token_id = env.register_stellar_asset_contract_v2(token_issuer.clone());
-    let token_admin = StellarAssetContractClient::new(&env, &token_id);
+    let sac = env.register_stellar_asset_contract_v2(token_issuer.clone());
+    let token_id = sac.address();
+    let token_admin = StellarAssetClient::new(&env, &token_id);
     let token_client = token::Client::new(&env, &token_id);
 
     token_admin.mint(&depositor, &1000i128);
 
     // 3. Register our Escrow Contract
-    let contract_id = env.register_contract(None, AnchorpayContract);
+    let contract_id = env.register(AnchorpayContract, ());
     let client = AnchorpayContractClient::new(&env, &contract_id);
 
     // 4. Initialize and Deposit
@@ -153,10 +155,11 @@ fn test_errors() {
     let token_issuer = Address::generate(&env);
 
     // Register mock token
-    let token_id = env.register_stellar_asset_contract_v2(token_issuer);
+    let sac = env.register_stellar_asset_contract_v2(token_issuer);
+    let token_id = sac.address();
 
     // Register contract
-    let contract_id = env.register_contract(None, AnchorpayContract);
+    let contract_id = env.register(AnchorpayContract, ());
     let client = AnchorpayContractClient::new(&env, &contract_id);
 
     let mut recipients = Vec::new(&env);
@@ -184,4 +187,3 @@ fn test_errors() {
     let res_ref = client.try_refund();
     assert!(res_ref.is_err());
 }
-

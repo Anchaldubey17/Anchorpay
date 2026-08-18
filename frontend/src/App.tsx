@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { isConnected, getPublicKey, signTransaction } from '@stellar/freighter-api';
-import { Transaction } from '@stellar/stellar-sdk';
-import { Client, EscrowState, EscrowStatus } from './contracts/anchorpay/src/index';
+import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
+import { Client, EscrowState, type EscrowStatus } from './contracts/anchorpay/src/index';
 import { formatAmount, getEscrowStateLabel } from './utils';
-
 
 // Config
 const CONTRACT_ID = 'CA352LBL2RVTLZG2ZOAQERZBN2DINWUIPRDRBVHF2CUDBOH3HNUZTYDN';
@@ -16,15 +14,16 @@ const contractClient = new Client({
   networkPassphrase: NETWORK_PASSPHRASE,
   contractId: CONTRACT_ID,
   rpcUrl: RPC_URL,
-  signTransaction: async (tx: Transaction) => {
-    const xdr = tx.toXDR();
-    const { signedTxXdr, error } = await signTransaction(xdr, {
-      network: "TESTNET",
+  signTransaction: async (xdr: string) => {
+    const result = await signTransaction(xdr, {
+      networkPassphrase: NETWORK_PASSPHRASE,
     });
-    if (error) {
-      throw new Error(error);
+    if (result.error) {
+      throw new Error(result.error);
     }
-    return new Transaction(signedTxXdr, NETWORK_PASSPHRASE);
+    return {
+      signedTxXdr: result.signedTxXdr
+    };
   }
 });
 
@@ -73,9 +72,9 @@ function App() {
     setError(null);
     try {
       const response = await contractClient.get_status();
-      // The generated client returns the result directly, or throws/panics on error
       if (response && response.result) {
-        setContractStatus(response.result);
+        const unwrapped = response.result.unwrap();
+        setContractStatus(unwrapped);
         setIsInitialized(true);
       }
     } catch (err: any) {
@@ -94,11 +93,14 @@ function App() {
       const installed = await isConnected();
       if (!installed) throw new Error("Freighter wallet is not installed.");
       
-      const publicKey = await getPublicKey();
-      if (!publicKey) throw new Error("Could not retrieve account from Freighter.");
-      
-      setUserAddress(publicKey);
-      setWalletConnected(true);
+      const res = await getAddress();
+      if ("error" in res && res.error) {
+        throw new Error(res.error);
+      }
+      if ("address" in res && res.address) {
+        setUserAddress(res.address);
+        setWalletConnected(true);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to connect wallet.");
     } finally {
@@ -150,8 +152,8 @@ function App() {
       });
 
       const response = await tx.signAndSend();
-      if (response.sendTransactionResult?.status === "PENDING" || response.sendTransactionResult?.status === "SUCCESS") {
-        setTxHash(response.sendTransactionResult.hash);
+      if (response.sendTransactionResponse && response.sendTransactionResponse.hash) {
+        setTxHash(response.sendTransactionResponse.hash);
         await fetchContractStatus();
       } else {
         throw new Error("Transaction submission failed.");
@@ -188,8 +190,8 @@ function App() {
       const tx = await contractClient.deposit({ amount: amountBigInt });
       const response = await tx.signAndSend();
 
-      if (response.sendTransactionResult?.status === "PENDING" || response.sendTransactionResult?.status === "SUCCESS") {
-        setTxHash(response.sendTransactionResult.hash);
+      if (response.sendTransactionResponse && response.sendTransactionResponse.hash) {
+        setTxHash(response.sendTransactionResponse.hash);
         await fetchContractStatus();
         setDepositAmount('');
       } else {
@@ -214,8 +216,8 @@ function App() {
       const tx = await contractClient.release();
       const response = await tx.signAndSend();
 
-      if (response.sendTransactionResult?.status === "PENDING" || response.sendTransactionResult?.status === "SUCCESS") {
-        setTxHash(response.sendTransactionResult.hash);
+      if (response.sendTransactionResponse && response.sendTransactionResponse.hash) {
+        setTxHash(response.sendTransactionResponse.hash);
         await fetchContractStatus();
       } else {
         throw new Error("Release transaction failed.");
@@ -239,8 +241,8 @@ function App() {
       const tx = await contractClient.refund();
       const response = await tx.signAndSend();
 
-      if (response.sendTransactionResult?.status === "PENDING" || response.sendTransactionResult?.status === "SUCCESS") {
-        setTxHash(response.sendTransactionResult.hash);
+      if (response.sendTransactionResponse && response.sendTransactionResponse.hash) {
+        setTxHash(response.sendTransactionResponse.hash);
         await fetchContractStatus();
       } else {
         throw new Error("Refund transaction failed.");
@@ -252,8 +254,6 @@ function App() {
       setActionLoading(false);
     }
   };
-
-
 
   const isTimelockExpired = () => {
     if (!contractStatus?.config?.timelock) return false;
@@ -279,7 +279,7 @@ function App() {
           <button
             onClick={fetchContractStatus}
             disabled={loading}
-            className="p-2.5 rounded-xl text-gray-450 hover:text-white bg-gray-900 border border-gray-800 text-xs transition-all disabled:opacity-50"
+            className="p-2.5 rounded-xl text-gray-300 hover:text-white bg-gray-900 border border-gray-800 text-xs transition-all disabled:opacity-50"
           >
             {loading ? 'Refreshing...' : '🔄 Refresh State'}
           </button>
@@ -476,7 +476,7 @@ function App() {
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder="e.g. 100"
-                        className="px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-800 text-sm font-mono text-white focus:border-violet-500 focus:outline-none"
+                        className="px-3 py-2.5 rounded-xl bg-gray-955 border border-gray-800 text-sm font-mono text-white focus:border-violet-500 focus:outline-none"
                       />
                     </div>
 
@@ -534,7 +534,7 @@ function App() {
                       <button
                         onClick={handleRefund}
                         disabled={actionLoading || userAddress !== contractStatus.config.depositor || !isTimelockExpired()}
-                        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent transition-all"
+                        className="w-full py-2.5 rounded-xl text-sm font-semibold bg-red-955/40 hover:bg-red-900/60 text-red-400 border border-red-900/30 disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent transition-all"
                       >
                         {!isTimelockExpired()
                           ? 'Timelock Active'
@@ -555,7 +555,7 @@ function App() {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">This Escrow Has Been Resolved</h3>
-                    <p className="text-sm text-gray-400 max-w-md mx-auto mt-2">
+                    <p className="text-sm text-gray-450 max-w-md mx-auto mt-2">
                       {contractStatus?.state === EscrowState.Released
                         ? 'All locked funds have been successfully split and released to the recipients according to their weights.'
                         : 'The timelock expired, and the locked funds have been refunded back to the depositor account.'}
@@ -618,7 +618,7 @@ function App() {
 
                     <div className="flex flex-col gap-1 text-sm py-1 border-b border-gray-900">
                       <span className="text-gray-400">Arbiter Address</span>
-                      <span className="font-mono text-xs text-gray-300 break-all">
+                      <span className="font-mono text-xs text-gray-350 break-all">
                         {contractStatus.config.arbiter}
                       </span>
                     </div>
@@ -627,7 +627,7 @@ function App() {
                       <span className="text-gray-400">Recipients & Splits</span>
                       <div className="flex flex-col gap-1.5 mt-1 font-mono text-xs bg-gray-950 p-2.5 rounded-lg border border-gray-900">
                         {contractStatus.config.recipients.map((rec, i) => (
-                          <div key={rec} className="flex justify-between items-center text-gray-300">
+                          <div key={rec} className="flex justify-between items-center text-gray-350">
                             <span className="truncate pr-4">{rec.slice(0, 10)}...{rec.slice(-10)}</span>
                             <span className="font-bold text-violet-400">Weight: {contractStatus.config.shares[i]}</span>
                           </div>
@@ -637,7 +637,7 @@ function App() {
 
                     <div className="flex justify-between items-center text-sm py-1 border-b border-gray-900">
                       <span className="text-gray-400">Timelock Expiry</span>
-                      <span className={`text-xs font-semibold ${isTimelockExpired() ? 'text-red-400' : 'text-gray-300'}`}>
+                      <span className={`text-xs font-semibold ${isTimelockExpired() ? 'text-red-400' : 'text-gray-355'}`}>
                         {new Date(Number(contractStatus.config.timelock) * 1000).toLocaleString()}
                         {isTimelockExpired() && ' (Expired)'}
                       </span>

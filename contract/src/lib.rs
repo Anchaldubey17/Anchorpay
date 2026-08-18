@@ -1,6 +1,6 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, token, Address, Env, Vec, Symbol
+    contract, contracterror, contractimpl, contracttype, token, Address, Env, Vec
 };
 
 #[contracterror]
@@ -41,7 +41,7 @@ pub struct EscrowConfig {
 #[derive(Clone, Debug)]
 pub struct EscrowStatus {
     pub state: EscrowState,
-    pub config: Option<EscrowConfig>,
+    pub config: EscrowConfig,
     pub amount_locked: i128,
 }
 
@@ -217,16 +217,20 @@ impl AnchorpayContract {
     }
 
     /// Queries the status of the escrow.
-    pub fn get_status(env: Env) -> EscrowStatus {
-        let state = env.storage().instance().get(&DataKey::State).unwrap_or(EscrowState::Init);
-        let config = env.storage().instance().get(&DataKey::Config);
-        let amount_locked = env.storage().instance().get(&DataKey::AmountLocked).unwrap_or(0i128);
+    pub fn get_status(env: Env) -> Result<EscrowStatus, ContractError> {
+        if !env.storage().instance().has(&DataKey::State) {
+            return Err(ContractError::NotInitialized);
+        }
 
-        EscrowStatus {
+        let state = env.storage().instance().get(&DataKey::State).unwrap();
+        let config = env.storage().instance().get(&DataKey::Config).unwrap();
+        let amount_locked = env.storage().instance().get(&DataKey::AmountLocked).unwrap();
+
+        Ok(EscrowStatus {
             state,
             config,
             amount_locked,
-        }
+        })
     }
 }
 
