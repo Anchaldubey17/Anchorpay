@@ -4,7 +4,7 @@ import { Client, EscrowState, type EscrowStatus } from './contracts/anchorpay/sr
 import { formatAmount, getEscrowStateLabel, truncateAddress } from './utils';
 
 // Config
-const CONTRACT_ID = 'CASEJNUHLUQYJZNBNQ3QO4JLFNOOEE3QYV34WNPLETOOSCOVERWYM43U';
+const CONTRACT_ID = 'CAVL7PGQVTG43VLTNTEAGGKAEYNZT67X4RXWZWP25DATVCNMZN2CKTKB';
 const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015';
 const RPC_URL = 'https://soroban-testnet.stellar.org';
 const NATIVE_TOKEN_ID = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';

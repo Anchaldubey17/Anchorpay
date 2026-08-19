@@ -1,28 +1,55 @@
 # Anchorpay: Stellar/Soroban Split-Payment Escrow DApp
 
-Anchorpay is a production-grade, decentralized split-payment escrow system built on the Stellar network using Soroban smart contracts. It enables a Depositor to lock funds (native XLM or custom SAC tokens) inside the contract and designate a list of Recipients with specific weight splits. A designated Arbiter is responsible for authorizing the release and distribution of the funds. If a specified time lock expires before release, the Depositor can reclaim their funds via a refund.
+[![Build Status](https://github.com/Anchaldubey17/Anchorpay/actions/workflows/ci.yml/badge.svg)](https://github.com/Anchaldubey17/Anchorpay/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Decentralized split-payment escrow system built on the Stellar network using Soroban smart contracts.
+
+---
 
 ## Live Demo 🔗
 
-Live URL: **[https://anchorpay.vercel.app](https://anchorpay.vercel.app)** *(Deployment in progress)*
+Live URL: **[https://anchorpay-chi.vercel.app](https://anchorpay-chi.vercel.app)**
+
+---
+
+## Problem / Motivation
+
+Traditional escrow agreements are often slow, expensive, and lack automated trust when splits are involved. Anchorpay solves this by providing a decentralized escrow protocol on Stellar. A Depositor can securely lock funds inside the contract, designating splits for multiple Recipients. A neutral Arbiter verifies the conditions are met and releases the split payouts directly, or if the time lock expires, the Depositor safely reclaims their funds.
+
+---
+
+## Features
+
+* **Freighter Wallet Integration**: Connect and authenticate securely using the standard Freighter browser extension.
+* **Pre-flight Account Change Guard**: Automatically detects account switches in the Freighter extension, updates the dApp state, and prompts re-verification to prevent transaction signature errors.
+* **Privacy Masking**: Conceals sensitive contract state and addresses behind a secure lock overlay until a wallet is connected.
+* **Dynamic Splits Entry**: UI form supports dynamic recipient row addition and deletion (no comma-separated strings needed), ensuring weight matching and address validations.
+* **Truncated Addresses & Clipboard Copy**: Truncates all public keys (Depositor, Arbiter, Recipients, Token ID) for clean presentation and provides secure one-click copy buttons.
+* **Responsive Dark Theme UI**: Built with glassmorphic cards, smooth micro-animations, and a styled dark-theme calendar date picker.
+
+---
 
 ## Contract Details
 
-*   **Network:** Stellar Testnet
-*   **Contract ID:** [`CA352LBL2RVTLZG2ZOAQERZBN2DINWUIPRDRBVHF2CUDBOH3HNUZTYDN`](https://stellar.expert/explorer/testnet/contract/CA352LBL2RVTLZG2ZOAQERZBN2DINWUIPRDRBVHF2CUDBOH3HNUZTYDN)
-*   **WASM Upload Hash:** `f8d6a91e14f942ed215bfad0ce85510945f68747f5248798f3b43ee30534f628`
-*   **Deployment Transaction:** [`d6ae2eb8e38b81788b975a0a5e0ad45cdd4cf6600bf7e7c0a66b5387ae5b47a2`](https://stellar.expert/explorer/testnet/tx/d6ae2eb8e38b81788b975a0a5e0ad45cdd4cf6600bf7e7c0a66b5387ae5b47a2)
-*   **Initialization Transaction:** [`44db6ba6f2b00e495d1a18cc2a0ebdb1ed31368ac15622860f872eba42a8f8de`](https://stellar.expert/explorer/testnet/tx/44db6ba6f2b00e495d1a18cc2a0ebdb1ed31368ac15622860f872eba42a8f8de)
+* **Network:** Stellar Testnet
+* **Contract ID:** [`CAVL7PGQVTG43VLTNTEAGGKAEYNZT67X4RXWZWP25DATVCNMZN2CKTKB`](https://stellar.expert/explorer/testnet/contract/CAVL7PGQVTG43VLTNTEAGGKAEYNZT67X4RXWZWP25DATVCNMZN2CKTKB)
+* **WASM Upload Hash:** `f8d6a91e14f942ed215bfad0ce85510945f68747f5248798f3b43ee30534f628`
+* **Deployment Transaction:** [`3af2ff3d9f49ade54cd3622c45ed2808d5982924cf8d95a4a05b9189ff3e6f12`](https://stellar.expert/explorer/testnet/tx/3af2ff3d9f49ade54cd3622c45ed2808d5982924cf8d95a4a05b9189ff3e6f12)
 
-## Demo Video 🎥
-
-[Watch the 2-Minute Demo Video](https://www.loom.com/share/placeholder-demo-video) *(Or view Loom/YouTube unlisted link)*
+---
 
 ## Screenshots
 
 | Mobile UI | CI/CD Passing | Test Output |
 |---|---|---|
-| ![mobile](docs/screenshots/mobile.png) | ![ci](docs/screenshots/ci.png) | ![tests](docs/screenshots/tests.png) |
+| ![Mobile UI](image.png) | ![ci](image-2.png) | ![Test Output](image-1.png) |
+
+---
+
+## Demo Video 🎥
+
+`[TODO: Record and link a 1-2 minute Loom/YouTube walkthrough of the connected contract flows]`
 
 ---
 
@@ -33,20 +60,25 @@ sequenceDiagram
     autonumber
     actor Depositor
     actor Arbiter
+    participant dApp as React Frontend (Freighter Wallet)
     participant Contract as Soroban Smart Contract
     actor Recipient as Recipients
     
     Note over Depositor,Contract: Phase 1: Initialization & Lockup
-    Depositor->>Contract: initialize(depositor, recipients, shares, arbiter, timelock, token)
-    Depositor->>Contract: deposit(amount) [Transfers tokens to contract]
+    Depositor->>dApp: Fill form & click "Initialize"
+    dApp->>Contract: initialize(depositor, recipients, shares, arbiter, timelock, token)
+    Depositor->>dApp: Enter amount & click "Deposit"
+    dApp->>Contract: deposit(amount) [Transfers tokens to contract]
     
     Note over Contract: Phase 2: Active Escrow State
     
     alt Happy Path: Release
-        Arbiter->>Contract: release() [Verifies arbiter signature]
+        Arbiter->>dApp: Click "Release Split Payment"
+        dApp->>Contract: release() [Verifies arbiter signature]
         Contract->>Recipient: Transfer split proportions
     else Expiry Path: Refund
-        Depositor->>Contract: refund() [Verifies timelock expired & depositor signature]
+        Depositor->>dApp: Click "Claim Timelock Refund"
+        dApp->>Contract: refund() [Verifies timelock expired & depositor signature]
         Contract->>Depositor: Transfer 100% funds back
     end
 ```
@@ -55,51 +87,59 @@ sequenceDiagram
 
 ## Tech Stack
 
-*   **Smart Contract:** Rust + `soroban-sdk` (v26.1.1)
-*   **Frontend:** React + TypeScript + Vite + Tailwind CSS v4
-*   **Wallet Integration:** Freighter Wallet (`@stellar/freighter-api`)
-*   **RPC Client:** `@stellar/stellar-sdk`
-*   **CI/CD:** GitHub Actions
-*   **Hosting:** Vercel
+| Layer | Technology |
+|---|---|
+| **Smart Contract** | Rust, Soroban SDK (v26.1.1) |
+| **Frontend Framework** | React, TypeScript, Vite |
+| **Styling** | Tailwind CSS v4, Vanilla CSS (Custom Glassmorphism) |
+| **Wallet Integration** | Freighter API (`@stellar/freighter-api`) |
+| **Blockchain Client** | Stellar SDK (`@stellar/stellar-sdk` v16+) |
+| **CI/CD** | GitHub Actions |
+| **Hosting** | Vercel |
 
 ---
 
-## Local Setup
+## Getting Started
 
 ### Prerequisites
-*   Rust (1.84.0+) & Cargo
-*   Node.js (v20+) & npm
-*   Stellar CLI (v27.1.0)
+* Rust & Cargo (v1.84.0+)
+* Node.js (v20+) & npm
+* A Freighter Wallet extension installed in your browser
 
-### 1. Smart Contract Build
+### 1. Build Smart Contract
 ```bash
-# Navigate to contract folder and build
+# Navigate to the contract folder
 cd contract
+
+# Build the WASM contract
 stellar contract build
 ```
-This produces `target/wasm32v1-none/release/anchorpay.wasm`.
+This generates the optimized contract file at `target/wasm32-unknown-unknown/release/anchorpay.wasm` (or `target/wasm32v1-none/release/anchorpay.wasm`).
 
-### 2. Frontend Execution
+### 2. Run React Frontend
 ```bash
+# Navigate to the frontend folder
 cd ../frontend
-# Install dependencies
+
+# Install node dependencies
 npm install
-# Run locally
+
+# Run the local Vite dev server
 npm run dev
 ```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser.
 
 ---
 
-## Testing
+## Running Tests
 
-### Contract Unit Tests
-To run the contract test suite (escrow happy path, refund flow, access control, and error handling):
+### Smart Contract Tests
+Run the Rust cargo test suite, which verifies splits distribution, timelock logic, access control, and error states:
 ```bash
 cd contract
 cargo test
 ```
-
-Expected Output:
+**Expected Output:**
 ```text
 running 3 tests
 test test::test_errors ... ok
@@ -109,14 +149,13 @@ test test::test_escrow_split_flow ... ok
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
 ```
 
-### Frontend Unit Tests
-To run the Vitest unit tests for the amount formatting and state label utilities:
+### Frontend Utility Tests
+Run Vitest to verify decimal conversion and state labelling:
 ```bash
 cd frontend
 npm test
 ```
-
-Expected Output:
+**Expected Output:**
 ```text
 ✓ src/utils.test.ts (3 tests) 54ms
 
@@ -130,8 +169,70 @@ Expected Output:
 
 | Function | Arguments | Description | Access Control |
 |---|---|---|---|
-| `initialize` | `depositor: Address`, `recipients: Vec<Address>`, `shares: Vec<u32>`, `arbiter: Address`, `timelock: u64`, `token: Address` | Sets the configuration and starts the escrow state as `Init`. | Unrestricted (once only) |
-| `deposit` | `amount: i128` | Transfers token from the depositor to the contract and changes state to `Deposited`. | `depositor` signature |
-| `release` | *None* | Divides and transfers funds to recipients based on their shares/weights, sets state to `Released`. | `arbiter` signature |
-| `refund` | *None* | Reclaims all locked funds back to the depositor if the timelock is expired, sets state to `Refunded`. | `depositor` signature |
+| `initialize` | `depositor: Address`, `recipients: Vec<Address>`, `shares: Vec<u32>`, `arbiter: Address`, `timelock: u64`, `token: Address` | Sets configuration parameters and sets state to `Init`. | Unrestricted (once only) |
+| `deposit` | `amount: i128` | Transfers assets from depositor to contract and changes state to `Deposited`. | `depositor` signature |
+| `release` | *None* | Splits and transfers the locked amount to recipients based on weight, sets state to `Released`. | `arbiter` signature |
+| `refund` | *None* | Reclaims all locked funds back to the depositor if the timelock has expired, sets state to `Refunded`. | `depositor` signature |
 | `get_status` | *None* | Reads and returns the state, config, and amount locked. | Read-Only (Simulation) |
+
+---
+
+## Project Structure
+
+```text
+.
+├── .github
+│   └── workflows
+│       └── ci.yml
+├── args
+├── bin
+│   ├── stellar-cli.tar.gz
+│   └── stellar.exe
+├── contract
+│   ├── src
+│   │   ├── lib.rs
+│   │   └── test.rs
+│   ├── Cargo.lock
+│   ├── Cargo.toml
+│   └── deploy_info.json
+├── frontend
+│   ├── src
+│   │   ├── assets
+│   │   ├── contracts
+│   │   │   └── anchorpay
+│   │   │       ├── src
+│   │   │       │   └── index.ts
+│   │   │       ├── tsconfig.json
+│   │   │       └── package.json
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   ├── utils.ts
+│   │   └── utils.test.ts
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+└── README.md
+```
+
+---
+
+## CI/CD
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) runs automatically on push/pull requests to the `main` branch. It executes:
+1. **Rust Check**: Verifies cargo builds and passes unit tests in `contract/`.
+2. **Frontend Check**: Verifies typescript checking (`tsc`), lints the code (`oxlint`), and compiles the production bundle (`vite build`).
+
+---
+
+## Known Limitations
+
+* **Testnet Only**: Built and deployed strictly for Stellar Testnet. Has not undergone a third-party security audit for mainnet release.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
