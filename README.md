@@ -49,7 +49,11 @@ Traditional escrow agreements are often slow, expensive, and lack automated trus
 
 ## Demo Video 🎥
 
-`[TODO: Record and link a 1-2 minute Loom/YouTube walkthrough of the connected contract flows]`
+
+
+https://github.com/user-attachments/assets/246256c6-aec5-4f17-97c9-563f1b9f2d6c
+
+
 
 ---
 
