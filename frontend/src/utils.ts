@@ -19,3 +19,10 @@ export const getEscrowStateLabel = (stateNum: EscrowState) => {
       return { text: 'Unknown', color: 'bg-gray-800 text-gray-400 border-gray-700' };
   }
 };
+
+export const truncateAddress = (address: string, chars = 6): string => {
+  if (!address) return '';
+  if (address.length <= chars * 2) return address;
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+};
+
